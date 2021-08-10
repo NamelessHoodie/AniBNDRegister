@@ -1,4 +1,6 @@
 # AniBNDRegister
+Barebones Command Line tool to register stuff in anibnd, ideal to use in your own programs or .bat scripts
+
 :AnibndPath :Comma Separated list of TAE ids to register :Comma separated list of animation tae subids to register
 
 Mass edit mode:
