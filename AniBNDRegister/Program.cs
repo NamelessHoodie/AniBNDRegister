@@ -25,6 +25,8 @@ namespace AniBNDRegister
                     int[] taeSubIDsToRegister = Array.ConvertAll(args[2].Replace(" ", "").Split(','), int.Parse);
                     var aniBndFiles = aniBnd.Files;
                     var dummyTaeIDBinderFile = aniBndFiles.First(a => a.ID == 2 + baseTaeID);
+                    Console.WriteLine("AniBNDRegister - Registering desired TAE and SUBTAE ID's");
+                    Console.WriteLine("---------------------------------------------------------------");
                     foreach (var taeID in taeIDsToRegister)
                     {
                         Console.WriteLine("Working on TAE: a" + taeID.ToString("00"));
@@ -72,24 +74,17 @@ namespace AniBNDRegister
                         }
                         Console.WriteLine();
                     }
-                    File.Delete(args[0] + ".bak");
+
+
+                    if (File.Exists(args[0] + ".bak"))
+                    {
+                        File.Delete(args[0] + ".bak");
+                    }
                     File.Move(args[0], args[0] + ".bak");
                     aniBnd.Write(args[0]);
-                    //foreach (var tae in aniBndFiles)
-                    //{
-                    //    Console.WriteLine(tae.ID);
-                    //    Console.WriteLine(tae.Name);
-                    //    Console.WriteLine();
-                    //    if (TAE3.Is(tae.Bytes))
-                    //    {
-                    //        foreach (var animation in TAE3.Read(tae.Bytes).Animations)
-                    //        {
-                    //            Console.WriteLine("     :" + animation.ID);
-                    //            Console.WriteLine("     :" + animation.AnimFileName);
-                    //        }
-                    //    }
-                    //    Console.WriteLine();
-                    //}
+
+                    Console.WriteLine("---------------------------------------------------------------");
+                    Console.WriteLine("AniBNDRegister - Complete.");
                 }
             }
             Console.ReadLine();
