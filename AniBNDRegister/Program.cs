@@ -30,19 +30,27 @@ namespace AniBNDRegister
                         Console.WriteLine("Working on TAE: a" + taeID.ToString("00"));
                         if (ListBinderFileContainsTaeID(taeID, aniBndFiles, out BinderFile binderFileResult))
                         {
-                            TAE3 templateTae = TAE3.Read(dummyTaeIDBinderFile.Bytes);
-                            templateTae.Animations = templateTae.Animations.Where(a => a.ID == 000000).ToList();
-                            TAE3.Animation animTemplate = templateTae.Animations.First();
-
-                            TAE3 taeObject = TAE3.Read(binderFileResult.Bytes);
-                            foreach (var taeSubID in taeSubIDsToRegister)
+                            try
                             {
-                                if (!taeObject.Animations.Any(subTae => subTae.ID == taeSubID))
+                                TAE3 templateTae = TAE3.Read(dummyTaeIDBinderFile.Bytes);
+                                templateTae.Animations = templateTae.Animations.Where(a => a.ID == 000000).ToList();
+                                TAE3.Animation animTemplate = templateTae.Animations.First();
+
+                                TAE3 taeObject = TAE3.Read(binderFileResult.Bytes);
+                                foreach (var taeSubID in taeSubIDsToRegister)
                                 {
-                                    InsertAfterFirstLowerIDAnimation(taeSubID, taeObject.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
+                                    if (!taeObject.Animations.Any(subTae => subTae.ID == taeSubID))
+                                    {
+                                        InsertAfterFirstLowerIDAnimation(taeSubID, taeObject.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
+                                    }
                                 }
+                                binderFileResult.Bytes = taeObject.Write();
                             }
-                            binderFileResult.Bytes = taeObject.Write();
+                            catch (Exception exception)
+                            {
+                                Console.WriteLine(exception.ToString());
+                                continue;
+                            }
                         }
                         else
                         {
