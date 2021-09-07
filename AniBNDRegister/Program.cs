@@ -22,7 +22,7 @@ namespace AniBNDRegister
                     var aniBnd = BND4.Read(args[0]);
 
                     int[] taeIDsToRegister = Array.ConvertAll(args[1].Replace(" ", "").Split(','), int.Parse);
-                    int[] taeSubIDsToRegister = Array.ConvertAll(args[2].Replace(" ", "").Split(','), int.Parse);
+                    long[] taeSubIDsToRegister = Array.ConvertAll(args[2].Replace(" ", "").Split(','), long.Parse);
                     var aniBndFiles = aniBnd.Files;
                     var dummyTaeIDBinderFile = aniBndFiles.First(a => a.ID == 2 + baseTaeID);
                     Console.WriteLine("AniBNDRegister - Registering desired TAE and SUBTAE ID's");
@@ -41,10 +41,7 @@ namespace AniBNDRegister
                                 TAE3 taeObject = TAE3.Read(binderFileResult.Bytes);
                                 foreach (var taeSubID in taeSubIDsToRegister)
                                 {
-                                    if (!taeObject.Animations.Any(subTae => subTae.ID == taeSubID))
-                                    {
-                                        InsertAfterFirstLowerIDAnimation(taeSubID, taeObject.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
-                                    }
+                                    InsertAfterFirstLowerIDAnimation(taeSubID, ref taeObject.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
                                 }
                                 binderFileResult.Bytes = taeObject.Write();
                             }
@@ -59,18 +56,16 @@ namespace AniBNDRegister
                             TAE3 templateTae = TAE3.Read(dummyTaeIDBinderFile.Bytes);
                             templateTae.Animations = templateTae.Animations.Where(a => a.ID == 000000).ToList();
                             TAE3.Animation animTemplate = templateTae.Animations.First();
+                            templateTae.Animations.Remove(animTemplate);
 
                             foreach (var taeSubID in taeSubIDsToRegister)
                             {
-                                if (!templateTae.Animations.Any(subTae => subTae.ID == taeSubID))
-                                {
-                                    InsertAfterFirstLowerIDAnimation(taeSubID, templateTae.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
-                                }
+                                InsertAfterFirstLowerIDAnimation(taeSubID, ref templateTae.Animations, new TAE3.Animation(animTemplate) { AnimFileName = $"a{taeID.ToString("000")}_{taeSubID.ToString("000000")}.hkt", ID = taeSubID });
                             }
 
-                            templateTae.Animations.Remove(animTemplate);
                             var ll = new BinderFile(dummyTaeIDBinderFile.Flags, taeID + baseTaeID, $"N:\\FDP\\data\\INTERROOT_win64\\chr\\c0000\\tae\\a{taeID.ToString("00")}.tae", templateTae.Write());
-                            InsertAfterFirstLowerIDBinderFile(taeID, aniBndFiles, ll);
+                            InsertAfterFirstLowerIDBinderFile(taeID, ref aniBndFiles, ll);
+                            aniBnd.Files = aniBndFiles;
                         }
                         Console.WriteLine();
                     }
@@ -103,75 +98,35 @@ namespace AniBNDRegister
                 return false;
             }
         }
-        public static bool InsertAfterFirstLowerIDBinderFile(int taeID, List<BinderFile> binderList, BinderFile newBinderFile)
+        public static bool InsertAfterFirstLowerIDBinderFile(int taeID, ref List<BinderFile> binderList, BinderFile newBinderFile)
         {
             int ID = taeID + baseTaeID;
-            if (binderList.Count() > 1)
+            if (!binderList.Any(item => item.ID == ID))
             {
-                for (int i = binderList.Count() - 1; i > 0; i--)
-                {
-                    if (ID == binderList[i].ID)
-                    {
-                        return false;
-                    }
-                    else if (binderList[i].ID < ID)
-                    {
-                        Console.WriteLine($"TAE file added ID: {taeID.ToString("00")}");
-                        binderList.Insert(i + 1, newBinderFile);
-                        return true;
-                    }
-                }
+                Console.WriteLine($"TAE file added ID: {taeID.ToString("00")}");
+                binderList.Add(newBinderFile);
+                binderList = binderList.OrderBy(item => item.ID).ToList();
+                return true;
             }
-            else if (binderList.Count() == 1)
+            else
             {
-                if (ID == binderList.First().ID)
-                {
-                    return false;
-                }
-                else if (binderList.First().ID < ID)
-                {
-                    Console.WriteLine($"TAE file added ID: {taeID.ToString("00")}");
-                    binderList.Insert(1, newBinderFile);
-                    return true;
-                }
+                return false;
             }
-            return false;
         }
-        static bool InsertAfterFirstLowerIDAnimation(int taeSubID, List<TAE3.Animation> animationList, TAE3.Animation newAnimation)
+        static bool InsertAfterFirstLowerIDAnimation(long taeSubID, ref List<TAE3.Animation> animationList, TAE3.Animation newAnimation)
         {
-            int ID = taeSubID;
-            if (animationList.Count() > 1)
+            if (!animationList.Any(item => item.ID == taeSubID))
             {
-                for (int i = animationList.Count() - 1; i > 0; i--)
-                {
-                    if (ID == animationList[i].ID)
-                    {
-                        Console.WriteLine($"TAE subID is already registered ID: {taeSubID.ToString("000000")}");
-                        return false;
-                    }
-                    else if (animationList[i].ID < ID)
-                    {
-                        Console.WriteLine($"TAE subID registered ID: {taeSubID.ToString("000000")}");
-                        animationList.Insert(i + 1, newAnimation);
-                        return true;
-                    }
-                }
+                Console.WriteLine($"TAE subID registered ID: {taeSubID.ToString("000000")}");
+                animationList.Add(newAnimation);
+                animationList = animationList.OrderBy(item => item.ID).ToList();
+                return true;
             }
-            else if (animationList.Count() == 1)
+            else
             {
-                if (ID == animationList.First().ID)
-                {
-                    Console.WriteLine($"TAE subID is already registered ID: {taeSubID.ToString("000000")}");
-                    return false;
-                }
-                else if (animationList.First().ID < ID)
-                {
-                    Console.WriteLine($"TAE subID registered ID: {taeSubID.ToString("000000")}");
-                    animationList.Insert(1, newAnimation);
-                    return true;
-                }
+                Console.WriteLine($"TAE subID already registered: {taeSubID.ToString("000000")}");
+                return false;
             }
-            return false;
         }
     }
 }
